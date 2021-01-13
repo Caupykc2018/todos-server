@@ -5,9 +5,7 @@ const {Todo, User} = require("../../models");
 exports.getAll = async ctx => {
     const userId = ctx.request.header["user-id"];
 
-    if(!userId) {
-        ctx.body = "No user"
-    }
+    ctx.assert(userId, 401, "No user");
 
     const todos = await Todo.find({userId: userId});
 
@@ -18,19 +16,13 @@ exports.create = async ctx => {
     const userId = ctx.request.header["user-id"];
     const { title } = ctx.request.body;
 
-    if(!userId) {
-        ctx.body = "No user";
-    }
+    ctx.assert(userId, 401, "No user");
 
     const user = await User.findOne({_id: userId});
 
-    if(!user) {
-        ctx.body = "Incorrect userId";
-    }
+    ctx.assert(user, 400, "Incorrect userId");
 
-    if(!title) {
-        ctx.body = "No title";
-    }
+    ctx.assert(user, 400, "No title");
 
     const todo = await Todo.create({title: title, userId: userId});
 
@@ -39,34 +31,74 @@ exports.create = async ctx => {
 
 exports.deleteOneById = async ctx => {
     const userId = ctx.request.header["user-id"];
-    const {todoId} = ctx.params
+    const {todoId} = ctx.params;
 
-    console.log(todoId);
-    
-    if(!userId) {
-        ctx.body = "No user";
-    }
+    ctx.assert(userId, 401, "No user");
 
     const todo = await Todo.findOneAndDelete({_id: todoId});
 
     ctx.body = todo;
 }
 
-exports.deleteAllByParams = async ctx => {
-    
-}
-
 exports.updateOneById = async ctx => {
     const userId = ctx.request.header["user-id"];
     const {todoId} = ctx.params;
 
-    const {isCompleted} = ctx.request.body;
+    const {title, isCompleted} = ctx.request.body;
     
-    if(!userId) {
-        ctx.body = "No user";
+    ctx.assert(userId, 401, "No user");
+
+    const updateData = {};
+
+    if(title) {
+        updateData.title = title;
     }
 
-    const todo = await Todo.findByIdAndUpdate({_id: todoId}, {isCompleted: isCompleted}, {new: true});
+    if(isCompleted) {
+        updateData.isCompleted = isCompleted;
+    }
+
+    const todo = await Todo.findByIdAndUpdate({_id: todoId}, updateData, {new: true});
 
     ctx.body = todo;
 };
+
+exports.toggleAll = async ctx => {
+    const userId = ctx.request.header["user-id"];
+    
+    ctx.assert(userId, 401, "No user");
+
+    const activeTodos = await Todo.find({isCompleted: false, userId: userId});
+    let editedTodos;
+
+    if(activeTodos.length) {
+        editedTodos = activeTodos.map(todo => {
+            todo.isCompleted = true;
+            todo.save();
+            return todo;
+        });
+    }
+    else {
+        const allTodos = await Todo.find({userId: userId});
+
+        editedTodos = allTodos.map(todo => {
+            todo.isCompleted = false;
+            todo.save();
+            return todo;
+        });
+    }
+    
+    ctx.body = editedTodos;
+}
+
+exports.clearCompleted = async ctx => {
+    const userId = ctx.request.header["user-id"];
+    
+    ctx.assert(userId, 401, "No user");
+
+    const completedTodos = await Todo.find({isCompleted: true, userId: userId});
+
+    completedTodos.forEach(todo => todo.remove());
+
+    ctx.body = completedTodos;
+}

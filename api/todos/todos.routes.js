@@ -10,9 +10,10 @@ module.exports = Router => {
   router
     .get('/', controller.getAll)
     .post('/', controller.create)
-    .del('/', controller.deleteAllByParams)
     .del('/:todoId', controller.deleteOneById)
-    .put('/:todoId', controller.updateOneById);
+    .put('/:todoId', controller.updateOneById)
+    .post('/toggle-all', controller.toggleAll)
+    .post('/clear-completed', controller.clearCompleted);
 
   return router;
 };

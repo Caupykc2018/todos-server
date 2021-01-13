@@ -20,7 +20,8 @@ function applyApiMiddleware(app) {
       router.use(api.routes());
     });
 
-  app.use(router.routes()).use(router.allowedMethods());
+  app.use(router.routes());
+  app.use(router.allowedMethods());
 }
 
 module.exports = applyApiMiddleware;
